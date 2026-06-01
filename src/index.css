@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 400px;
+  min-width: 400px;
+  max-width: 400px;
+  overflow-x: hidden;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Custom scrollbar — matches dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 999px;
+  /* Border trick: transparent padding shrinks the visible thumb to ~4px */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: border-width 0.15s ease, background-color 0.15s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #555;
+  background-clip: padding-box;
+}
+
+/* Expand to full 8px width + accent colour while actively scrolling */
+::-webkit-scrollbar-thumb:active {
+  background-color: #e05553;
+  border-width: 0;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
