@@ -57,19 +57,19 @@ const AccountCard = memo(function AccountCard({ account, isFavorited, onToggleFa
           </button>
 
           <button
-            onClick={handleCopyPass}
-            className="flex-1 inline-flex items-center justify-center h-6 rounded text-xs text-gray-200 hover:bg-[#383838] transition-colors"
-            style={{ backgroundColor: '#2a2a2a' }}
-          >
-            {copiedPass ? '✅' : 'Copy Pass'}
-          </button>
-
-          <button
             onClick={handleCopyEmail}
             className="flex-1 inline-flex items-center justify-center h-6 rounded text-xs text-gray-200 hover:bg-[#383838] transition-colors"
             style={{ backgroundColor: '#2a2a2a' }}
           >
             {copiedEmail ? '✅' : 'Copy Email'}
+          </button>
+
+          <button
+            onClick={handleCopyPass}
+            className="flex-1 inline-flex items-center justify-center h-6 rounded text-xs text-gray-200 hover:bg-[#383838] transition-colors"
+            style={{ backgroundColor: '#2a2a2a' }}
+          >
+            {copiedPass ? '✅' : 'Copy Pass'}
           </button>
 
         </div>
