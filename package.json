@@ -2,6 +2,21 @@
   "name": "wehost-airbnb-extension",
   "version": "1.0.0",
   "private": true,
+  "description": "Chrome MV3 extension for WeHost property managers to view and auto-login to multiple Airbnb host accounts in isolated incognito sessions.",
+  "author": "Niko Gogiberidze <gogiberidze.19@gmail.com>",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nikoGogiberidze/wehost-airbnb-extension.git"
+  },
+  "keywords": [
+    "chrome-extension",
+    "manifest-v3",
+    "react",
+    "vite",
+    "airbnb",
+    "monday.com"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build && cross-env BUILD_TARGET=sw vite build",

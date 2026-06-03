@@ -1,14 +1,61 @@
+import { timingSafeEqual } from 'crypto';
+
+// --- Security helpers ---
+
+// Constant-time comparison so an attacker can't infer the key via response timing.
+function safeEqual(a, b) {
+  const bufA = Buffer.from(String(a ?? ''));
+  const bufB = Buffer.from(String(b ?? ''));
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
+// Best-effort in-memory rate limiter. NOTE: Vercel serverless instances are
+// ephemeral and not shared between invocations, so this only throttles bursts
+// that hit the same warm instance. For robust global rate limiting, back this
+// with Vercel KV / Upstash Redis.
+const RATE_LIMIT = 60; // max requests
+const RATE_WINDOW_MS = 60_000; // per 60s, per IP
+const hits = new Map();
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const entry = hits.get(ip);
+  if (!entry || now > entry.resetAt) {
+    hits.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > RATE_LIMIT;
+}
+
 export default async function handler(req, res) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS — only allow the extension (chrome-extension://) or non-browser callers.
+  // A website calling this from a browser gets no ACAO header and is blocked.
+  // (CORS is browser-enforced only; the API key below is the real access gate.)
+  const origin = req.headers.origin;
+  const originAllowed = !origin || origin.startsWith('chrome-extension://');
+  if (originAllowed) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'x-api-key');
+  // Never let credential responses sit in any cache.
+  res.setHeader('Cache-Control', 'no-store');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Auth check
+  // Rate limit per client IP
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  if (isRateLimited(ip)) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  // Auth check (constant-time)
   const apiKey = req.headers['x-api-key'];
-  if (apiKey !== process.env.EXTENSION_API_KEY) {
+  if (!apiKey || !safeEqual(apiKey, process.env.EXTENSION_API_KEY)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
