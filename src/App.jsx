@@ -97,7 +97,7 @@ export default function App() {
     >
       {/* Header */}
       <div className="px-3 pt-3 pb-1 border-b border-[#333]">
-        <h1 className="text-sm text-gray-100 tracking-wide" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 800 }}>WEHOST Airbnb accounts manager</h1>
+        <h1 className="text-sm text-gray-100 tracking-wide" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 800 }}>WEHOST - Airbnb accounts manager</h1>
       </div>
 
       <SearchBar value={searchInput} onChange={handleSearchChange} />
