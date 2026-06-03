@@ -13,7 +13,9 @@ session** — one click, no manual typing, no leftover sessions bleeding between
 > **Note:** This repository is public for portfolio purposes. The code is proprietary —
 > see [LICENSE](LICENSE).
 
-<!-- TODO: add a screenshot or short GIF of the popup here, e.g. docs/screenshot.png -->
+<p align="center">
+  <img src="docs/screenshot.png" alt="WEHOST – Airbnb Accounts Manager popup" width="400" />
+</p>
 
 ## Features
 
