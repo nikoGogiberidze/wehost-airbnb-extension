@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Wehost Airbnb Manager",
+  "name": "WEHOST – Airbnb Accounts Manager",
   "version": "1.0.0",
-  "description": "Internal WeHost tool for managing Airbnb accounts",
+  "description": "Quickly view and auto-login to multiple Airbnb host accounts in an isolated incognito session. Built for WeHost property managers.",
   "permissions": [
     "tabs",
     "scripting",
@@ -18,7 +18,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_width": 400,
+    "default_width": 480,
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
