@@ -36,7 +36,7 @@ function writeStorage(obj) {
   });
 }
 
-export function useAccounts() {
+export function useAccounts({ token, onAuthError } = {}) {
   const [accounts, setAccounts] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [order, setOrder] = useState([]);
@@ -60,8 +60,12 @@ export function useAccounts() {
     setError(null);
     try {
       const res = await fetch(`${API_BASE}/api/accounts`, {
-        headers: { 'x-api-key': API_KEY },
+        headers: { 'x-api-key': API_KEY, Authorization: `Bearer ${token || ''}` },
       });
+      if (res.status === 401) {
+        onAuthError?.();
+        throw new Error('Session expired — please sign in again');
+      }
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
       const now = Date.now();
@@ -73,7 +77,7 @@ export function useAccounts() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token, onAuthError]);
 
   const reorder = useCallback(async (newOrder) => {
     setOrder(newOrder);

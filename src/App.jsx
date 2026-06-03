@@ -1,12 +1,16 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useAccounts } from './hooks/useAccounts';
+import { useAuth } from './hooks/useAuth';
 import SearchBar from './components/SearchBar';
 import FilterBar from './components/FilterBar';
 import SyncBar from './components/SyncBar';
 import AccountCard from './components/AccountCard';
+import LoginScreen from './components/LoginScreen';
 
 export default function App() {
-  const { accounts, favorites, order, lastSynced, loading, error, sync, toggleFavorite, reorder } = useAccounts();
+  const { token, isAuthenticated, ready, authError, authLoading, login, logout } = useAuth();
+  const { accounts, favorites, order, lastSynced, loading, error, sync, toggleFavorite, reorder } =
+    useAccounts({ token, onAuthError: logout });
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('All');
@@ -96,11 +100,27 @@ export default function App() {
     setDragOverEmail(null);
   }, []);
 
+  // Avoid a flash of the login screen before the stored token has loaded.
+  if (!ready) {
+    return <div className="w-[480px] h-[580px] bg-base" />;
+  }
+
+  if (!isAuthenticated) {
+    return <LoginScreen onLogin={login} error={authError} loading={authLoading} />;
+  }
+
   return (
     <div className="flex flex-col text-gray-100 w-[480px] h-[580px] bg-base">
       {/* Header */}
-      <div className="px-3 pt-3 pb-1 border-b border-divider">
-        <h1 className="text-sm text-gray-100 tracking-wide font-heading font-extrabold">WEHOST - Airbnb accounts manager</h1>
+      <div className="px-3 pt-3 pb-1 border-b border-divider flex items-center justify-between gap-2">
+        <h1 className="text-sm text-gray-100 tracking-wide font-heading font-extrabold truncate">WEHOST - Airbnb accounts manager</h1>
+        <button
+          onClick={logout}
+          title="Log out"
+          className="shrink-0 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+        >
+          Log out
+        </button>
       </div>
 
       <SearchBar value={searchInput} onChange={handleSearchChange} />

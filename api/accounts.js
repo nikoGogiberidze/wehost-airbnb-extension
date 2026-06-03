@@ -1,73 +1,63 @@
-import { timingSafeEqual } from 'crypto';
+import { applyCors, rateLimit, clientIp, safeEqual, verifyToken } from './_lib/auth.js';
 
-// --- Security helpers ---
-
-// Constant-time comparison so an attacker can't infer the key via response timing.
-function safeEqual(a, b) {
-  const bufA = Buffer.from(String(a ?? ''));
-  const bufB = Buffer.from(String(b ?? ''));
-  if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
-}
-
-// Best-effort in-memory rate limiter. NOTE: Vercel serverless instances are
-// ephemeral and not shared between invocations, so this only throttles bursts
-// that hit the same warm instance. For robust global rate limiting, back this
-// with Vercel KV / Upstash Redis.
-const RATE_LIMIT = 60; // max requests
-const RATE_WINDOW_MS = 60_000; // per 60s, per IP
-const hits = new Map();
-
-function isRateLimited(ip) {
-  const now = Date.now();
-  const entry = hits.get(ip);
-  if (!entry || now > entry.resetAt) {
-    hits.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > RATE_LIMIT;
-}
+// Fake data served to "test" role logins (e.g. the Chrome Web Store reviewer),
+// so review can verify functionality without ever receiving real credentials.
+const TEST_ACCOUNTS = [
+  {
+    email: 'demo.tbilisi@example.com', password: 'demo-pass-001', city: 'Tbilisi',
+    airbnbUrl: 'https://example.com/listing/1',
+    properties: [{ guestyName: 'Demo Apartment 1', georgianName: 'სადემო ბინა 1' }],
+  },
+  {
+    email: 'demo.batumi@example.com', password: 'demo-pass-002', city: 'Batumi',
+    airbnbUrl: 'https://example.com/listing/2',
+    properties: [{ guestyName: 'Demo Apartment 2', georgianName: 'სადემო ბინა 2' }],
+  },
+  {
+    email: 'demo.gudauri@example.com', password: 'demo-pass-003', city: 'Gudauri',
+    airbnbUrl: 'https://example.com/listing/3',
+    properties: [{ guestyName: 'Demo Chalet 3', georgianName: 'სადემო შალე 3' }],
+  },
+];
 
 export default async function handler(req, res) {
-  // CORS — only allow the extension (chrome-extension://) or non-browser callers.
-  // A website calling this from a browser gets no ACAO header and is blocked.
-  // (CORS is browser-enforced only; the API key below is the real access gate.)
-  const origin = req.headers.origin;
-  const originAllowed = !origin || origin.startsWith('chrome-extension://');
-  if (originAllowed) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    res.setHeader('Vary', 'Origin');
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'x-api-key');
-  // Never let credential responses sit in any cache.
-  res.setHeader('Cache-Control', 'no-store');
-
+  applyCors(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Rate limit per client IP
-  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
-  if (isRateLimited(ip)) {
+  if (rateLimit(clientIp(req))) {
     return res.status(429).json({ error: 'Too many requests' });
   }
 
-  // Auth check (constant-time)
-  const apiKey = req.headers['x-api-key'];
-  if (!apiKey || !safeEqual(apiKey, process.env.EXTENSION_API_KEY)) {
+  // First factor: the bundled API key.
+  if (!safeEqual(req.headers['x-api-key'], process.env.EXTENSION_API_KEY)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  // Second factor: a valid per-user session token. The bundled key alone is NOT
+  // enough to read data — this is what stops a key extracted from the published
+  // bundle from being used to dump credentials.
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  const session = verifyToken(token, process.env.AUTH_JWT_SECRET);
+  if (!session) {
+    return res.status(401).json({ error: 'Login required' });
+  }
+
+  // Test users never touch the real Monday board.
+  if (session.role === 'test') {
+    return res.status(200).json(TEST_ACCOUNTS);
+  }
+
   const boardId = process.env.MONDAY_BOARD_ID;
-  const token = process.env.MONDAY_API_TOKEN;
+  const token_monday = process.env.MONDAY_API_TOKEN;
 
   const mondayFetch = (query) =>
     fetch('https://api.monday.com/v2', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: token,
+        Authorization: token_monday,
         'API-Version': '2024-01',
       },
       body: JSON.stringify({ query }),
