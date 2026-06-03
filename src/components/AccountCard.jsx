@@ -42,19 +42,13 @@ const AccountCard = memo(function AccountCard({
       onDragOver={canDrag ? (e) => { e.preventDefault(); onDragOver(account.email); } : undefined}
       onDrop={canDrag ? (e) => { e.preventDefault(); onDrop(account.email); } : undefined}
       onDragEnd={canDrag ? onDragEnd : undefined}
-      className="flex items-center gap-2 px-3 py-2.5 border-b border-[#333] last:border-b-0 transition-colors overflow-hidden"
-      style={{
-        backgroundColor: isDragOver ? '#3a3a3a' : undefined,
-        opacity: isDragging ? 0.4 : 1,
-        borderTop: isDragOver ? '2px solid #e05553' : undefined,
-      }}
+      className={`flex items-center gap-2 px-3 py-2.5 border-b border-divider last:border-b-0 transition-colors overflow-hidden ${
+        isDragOver ? 'bg-drag border-t-2 border-t-accent' : ''
+      } ${isDragging ? 'opacity-40' : ''}`}
     >
       {/* Drag handle */}
       {canDrag && (
-        <span
-          className="shrink-0 text-gray-600 text-base select-none"
-          style={{ cursor: 'grab', lineHeight: 1 }}
-        >
+        <span className="shrink-0 text-gray-600 text-base select-none cursor-grab leading-none">
           ⠿
         </span>
       )}
@@ -66,7 +60,7 @@ const AccountCard = memo(function AccountCard({
         title={isFavorited ? 'Unpin' : 'Pin'}
       >
         {isFavorited
-          ? <span style={{ color: '#e05553' }}>⭐</span>
+          ? <span className="text-accent">⭐</span>
           : <span className="text-gray-600">☆</span>
         }
       </button>
@@ -82,24 +76,21 @@ const AccountCard = memo(function AccountCard({
         <div className="flex gap-1">
           <button
             onClick={handleLogin}
-            style={{ backgroundColor: '#e05553' }}
-            className="flex-1 inline-flex items-center justify-center h-6 rounded text-xs font-medium text-white hover:opacity-90 transition-opacity"
+            className="flex-1 inline-flex items-center justify-center h-6 rounded text-xs font-medium text-white bg-accent hover:opacity-90 transition-opacity"
           >
             Login
           </button>
 
           <button
             onClick={handleCopyEmail}
-            className="flex-1 inline-flex items-center justify-center h-6 rounded text-xs text-gray-200 hover:bg-[#383838] transition-colors"
-            style={{ backgroundColor: '#2a2a2a' }}
+            className="flex-1 inline-flex items-center justify-center h-6 rounded text-xs text-gray-200 bg-surface hover:bg-surface-hover transition-colors"
           >
             {copiedEmail ? '✅' : 'Copy Email'}
           </button>
 
           <button
             onClick={handleCopyPass}
-            className="flex-1 inline-flex items-center justify-center h-6 rounded text-xs text-gray-200 hover:bg-[#383838] transition-colors"
-            style={{ backgroundColor: '#2a2a2a' }}
+            className="flex-1 inline-flex items-center justify-center h-6 rounded text-xs text-gray-200 bg-surface hover:bg-surface-hover transition-colors"
           >
             {copiedPass ? '✅' : 'Copy Pass'}
           </button>

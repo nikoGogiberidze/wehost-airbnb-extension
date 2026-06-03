@@ -55,6 +55,12 @@ export default function App() {
     return result;
   }, [accounts, favorites, order, search, cityFilter]);
 
+  // City filter options derived from the synced data (plus "All")
+  const cities = useMemo(() => {
+    const unique = [...new Set(accounts.map((a) => a.city).filter(Boolean))].sort();
+    return ['All', ...unique];
+  }, [accounts]);
+
   const canDrag = search === '';
 
   const handleDragStart = useCallback((email) => {
@@ -91,17 +97,14 @@ export default function App() {
   }, []);
 
   return (
-    <div
-      className="flex flex-col text-gray-100"
-      style={{ width: 480, height: 580, backgroundColor: '#1a1a1a' }}
-    >
+    <div className="flex flex-col text-gray-100 w-[480px] h-[580px] bg-base">
       {/* Header */}
-      <div className="px-3 pt-3 pb-1 border-b border-[#333]">
-        <h1 className="text-sm text-gray-100 tracking-wide" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 800 }}>WEHOST - Airbnb accounts manager</h1>
+      <div className="px-3 pt-3 pb-1 border-b border-divider">
+        <h1 className="text-sm text-gray-100 tracking-wide font-heading font-extrabold">WEHOST - Airbnb accounts manager</h1>
       </div>
 
       <SearchBar value={searchInput} onChange={handleSearchChange} />
-      <FilterBar value={cityFilter} onChange={setCityFilter} />
+      <FilterBar value={cityFilter} onChange={setCityFilter} cities={cities} />
 
       {/* Error banner */}
       {error && (

@@ -25,14 +25,14 @@ export default function SyncBar({ lastSynced, loading, onSync }) {
   };
 
   return (
-    <div className="flex items-center justify-between px-3 py-1.5 border-t border-[#333]">
+    <div className="flex items-center justify-between px-3 py-1.5 border-t border-divider">
       <span className="text-xs text-gray-400">
         {lastSynced ? `Last synced: ${timeAgo(lastSynced)}` : 'Never synced'}
       </span>
       <button
         onClick={handleSync}
         disabled={loading}
-        className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-accent hover:bg-[#c94745] text-white disabled:opacity-50 transition-colors"
+        className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-accent hover:bg-accent-hover text-white disabled:opacity-50 transition-colors"
       >
         {loading ? (
           <>
