@@ -8,8 +8,8 @@ or behavior change.
 ## Listing basics
 
 - **Name:** WEHOST – Airbnb Accounts Manager
-- **Category:** Productivity
-- **Visibility:** Unlisted (private team tool — only people with the link can install)
+- **Category:** Workflow & Planning
+- **Visibility:** Private (only allowlisted Google accounts can install)
 - **Privacy policy URL:** https://github.com/nikoGogiberidze/wehost-airbnb-extension/blob/master/PRIVACY.md
 - **Support email:** gogiberidze.19@gmail.com
 
@@ -53,6 +53,19 @@ or behavior change.
 > WEHOST – Airbnb Accounts Manager lets authorized WeHost property managers view their
 > Airbnb host accounts and securely auto-login to any one of them in an isolated incognito
 > browser session.
+
+### Test instructions (required — the extension is gated behind a login)
+
+The extension requires sign-in. Provide the **test** login, which returns only synthetic
+demo data (no real credentials are ever shown to the reviewer):
+
+- **Username:** `reviewer@wehost.com`
+- **Password:** `wehost-review-2026`
+- **Additional instructions:**
+  > Sign in with the credentials above, then press "Sync" to load the account list (this is
+  > demo data — this test login never sees real accounts). Try search, the city filters, the
+  > favorite star, drag-to-reorder, and the Copy Email / Copy Pass buttons. Clicking "Login"
+  > on a demo account opens a fresh incognito window — for review you can stop there.
 
 ---
 
@@ -103,16 +116,19 @@ Answer the checkboxes as follows:
 
 **Where the data goes (use in the "data handling" notes):**
 - Stored locally in the browser (`chrome.storage.local`); never transmitted to the developer.
-- Sent only to (1) WeHost's private Vercel proxy to fetch the account list from Monday.com,
+- Sent only to (1) WeHost's private Vercel proxy to authenticate the user and fetch the
+  account list from Monday.com (account data is released only after a valid per-user login),
   and (2) airbnb.com to perform login. No analytics or third-party sharing.
 
 ---
 
 ## Pre-upload checklist
 
+- [ ] `AUTH_USERS`, `AUTH_PEPPER`, `AUTH_JWT_SECRET` set in Vercel and deployed
 - [ ] `npm run build` produces a clean `dist/`
 - [ ] `dist/manifest.json` shows the correct `name`, `version`, and `default_width: 480`
 - [ ] Version bumped from the previously uploaded version (every re-upload needs a higher `version`)
 - [ ] Zip the **contents** of `dist/` (not the folder itself) for upload
 - [ ] Privacy policy URL is live and reachable
 - [ ] At least one 1280×800 or 640×400 screenshot prepared for the listing
+- [ ] Test login (`reviewer@wehost.com`) entered in the Test Instructions field

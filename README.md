@@ -19,6 +19,8 @@ session** — one click, no manual typing, no leftover sessions bleeding between
 
 ## Features
 
+- **Per-user sign-in** — access is gated behind an email/password login validated
+  server-side; credentials are never released to an unauthenticated client.
 - **One-click auto-login** — pick an account and the extension opens a fresh incognito
   window and drives the Airbnb login form end-to-end.
 - **Clean session isolation** — before each login it wipes all Airbnb cookies and tears
@@ -38,16 +40,20 @@ flowchart LR
         P["Popup\nReact + Vite + Tailwind"]
         SW["Service Worker\nauto-login + session isolation"]
     end
-    P -- "GET /api/accounts\n(x-api-key)" --> V["Vercel Serverless Proxy"]
+    P -- "POST /api/login\n(email + password)" --> L["Vercel /api/login\nissues signed token"]
+    P -- "GET /api/accounts\n(Bearer token)" --> V["Vercel /api/accounts"]
     V -- "GraphQL" --> M["Monday.com Board"]
     P -- "OPEN_LOGIN msg" --> SW
     SW -- "incognito window +\nchrome.scripting" --> A["airbnb.com/login"]
 ```
 
-- **Popup** renders the account list and talks only to the Vercel proxy (the Monday.com
-  token never touches the client).
-- **Vercel function** ([`api/accounts.js`](api/accounts.js)) authenticates the request,
-  queries the Monday.com board, and returns a de-duplicated, grouped account list.
+- **Popup** gates the UI behind a login, then talks to the Vercel proxy with a session
+  token (the Monday.com token never touches the client).
+- **`/api/login`** ([`api/login.js`](api/login.js)) validates credentials against a hashed
+  allowlist and issues a signed, expiring token.
+- **`/api/accounts`** ([`api/accounts.js`](api/accounts.js)) requires a valid token, then
+  queries Monday.com and returns a de-duplicated, grouped account list. A `test`-role token
+  receives synthetic demo data only.
 - **Service worker** ([`src/background/service_worker.js`](src/background/service_worker.js))
   handles the login automation and incognito session lifecycle.
 
@@ -82,17 +88,20 @@ A few parts that were more interesting than they look:
 ## Project structure
 
 ```
-├── api/accounts.js                 # Vercel serverless proxy → Monday.com
+├── api/
+│   ├── login.js                    # Validates credentials, issues a signed token
+│   ├── accounts.js                 # Token-gated proxy → Monday.com (test role = demo data)
+│   └── _lib/auth.js                # Token sign/verify, password hashing, CORS, rate limit
 ├── public/
 │   ├── manifest.json               # MV3 manifest
 │   └── icons/                      # Generated extension icons
 ├── popup.html                      # Popup entry
 ├── src/
-│   ├── App.jsx                     # Popup shell, filtering, drag-reorder
-│   ├── components/                 # AccountCard, SearchBar, FilterBar, SyncBar
-│   ├── hooks/useAccounts.js        # Storage + sync + favorites/order state
+│   ├── App.jsx                     # Login gate + popup shell, filtering, drag-reorder
+│   ├── components/                 # LoginScreen, AccountCard, SearchBar, FilterBar, SyncBar
+│   ├── hooks/                      # useAuth (login/token), useAccounts (sync + state)
 │   └── background/service_worker.js # Auto-login + session isolation
-├── scripts/create-icons.js         # Generates PNG icons from an embedded SVG
+├── scripts/                        # create-icons, create-promo, hash-user, make-auth-users
 ├── vite.config.js                  # Two-pass build (popup ESM + worker IIFE)
 └── vercel.json
 ```
@@ -109,10 +118,16 @@ Environment variables:
 | Variable | Where | Purpose |
 |---|---|---|
 | `VITE_API_BASE_URL` | `.env` (build-time) | Base URL of the Vercel proxy |
-| `VITE_EXTENSION_API_KEY` | `.env` (build-time) | Key the extension sends to the proxy |
-| `EXTENSION_API_KEY` | Vercel dashboard | Key the proxy validates against |
+| `VITE_EXTENSION_API_KEY` | `.env` (build-time) | First-factor key the extension sends to the proxy |
+| `EXTENSION_API_KEY` | Vercel dashboard | First-factor key the proxy validates against |
 | `MONDAY_API_TOKEN` | Vercel dashboard | Monday.com API token (server-side only) |
 | `MONDAY_BOARD_ID` | Vercel dashboard | Monday.com board to read from |
+| `AUTH_USERS` | Vercel dashboard | JSON allowlist of `{ email, hash, role }` logins |
+| `AUTH_PEPPER` | Vercel dashboard | Server-only secret mixed into password hashes |
+| `AUTH_JWT_SECRET` | Vercel dashboard | Secret used to sign/verify session tokens |
+
+Manage logins with `node scripts/make-auth-users.js "email:password[:role]" ...` to produce
+the `AUTH_USERS` value.
 
 ## Development & build
 
@@ -129,17 +144,23 @@ npm run build    # Two-pass production build → dist/
 
 ## Security
 
-This is an internal tool, and its security model reflects that:
+Account data is released only to authenticated, allowlisted users:
 
-- The Monday.com token and board ID live **only** in Vercel environment variables and are
-  never shipped to the client.
-- The proxy validates a shared API key (constant-time comparison), restricts CORS to the
-  extension origin, sends `Cache-Control: no-store`, and applies best-effort rate limiting.
-- **Known tradeoff:** because the extension is a distributed client, its API key is present
-  in the shipped bundle and is therefore not a true secret. For this low-sensitivity
-  internal use that is an accepted limitation; a hardened version would replace the shared
-  key with per-user authentication (e.g. Google sign-in) and move rate limiting to a
-  persistent store (Vercel KV / Upstash).
+- **Per-user authentication is the real access gate.** `/api/accounts` requires a valid,
+  signed session token — not just the bundled key. A user obtains a token by logging in
+  through `/api/login`, which validates the email/password against a server-side hashed
+  allowlist (`AUTH_USERS`). This means a key extracted from the shipped bundle is **not**
+  sufficient to read data: without a valid login the endpoint returns `401`.
+- **Test mode for review.** A `test`-role login receives only synthetic demo data, so the
+  Chrome Web Store reviewer can verify the extension without ever receiving real credentials.
+- **Secrets stay server-side.** The Monday.com token/board ID and all auth secrets
+  (`AUTH_PEPPER`, `AUTH_JWT_SECRET`) live only in Vercel environment variables.
+- **Defense in depth.** Passwords are stored salted-and-hashed (never plaintext); tokens are
+  HMAC-signed with a 30-day expiry; the proxy uses constant-time comparisons, restricts CORS
+  to the extension origin, sends `Cache-Control: no-store`, and applies best-effort rate
+  limiting (move to Vercel KV / Upstash for robust global limiting).
+- **Revocation.** Removing a user from `AUTH_USERS` (and redeploying) revokes their access;
+  rotating `AUTH_JWT_SECRET` invalidates all existing tokens at once.
 
 ## License
 

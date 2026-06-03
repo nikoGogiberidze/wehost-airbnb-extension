@@ -9,16 +9,21 @@ what data the Extension handles, where it goes, and what it does **not** do.
 
 ## What data the Extension handles
 
+- **Your sign-in credentials** (the email and password issued to you by WeHost to access the
+  Extension). These are sent to WeHost's backend only to authenticate you; on success a
+  signed, time-limited session token is stored locally and used for subsequent requests.
 - **Airbnb account credentials** (email addresses and passwords). These are fetched from
-  WeHost's internal Monday.com board through a private backend proxy, and are used solely
-  to display the account list and to fill the Airbnb login form on your behalf.
+  WeHost's internal Monday.com board through a private backend proxy **only after you sign
+  in**, and are used solely to display the account list and to fill the Airbnb login form on
+  your behalf.
 - **Local preferences** — which accounts you have marked as favorites and your custom
   account ordering.
 
 ## Where the data is stored
 
-- All account data and preferences are stored **locally in your browser** using Chrome's
-  `chrome.storage.local`. They are not transmitted to the developer or to any third party.
+- The session token, account data, and preferences are stored **locally in your browser**
+  using Chrome's `chrome.storage.local`. They are not transmitted to the developer or to any
+  third party. Signing out clears the token and the cached account data.
 - Account data is only refreshed when you explicitly press the **Sync** button. There is
   no automatic background collection.
 
@@ -26,8 +31,9 @@ what data the Extension handles, where it goes, and what it does **not** do.
 
 The Extension transmits data to only two destinations, and only for the purposes described:
 
-1. **WeHost's backend proxy** (hosted on Vercel) — to retrieve the account list from the
-   company's Monday.com board. Requests are authenticated with an API key.
+1. **WeHost's backend proxy** (hosted on Vercel) — to sign you in and to retrieve the
+   account list from the company's Monday.com board. Requests require both an API key and a
+   valid per-user session token.
 2. **airbnb.com** — credentials are entered into Airbnb's official login form so you can
    sign in, exactly as if you typed them yourself.
 
@@ -60,9 +66,11 @@ removing/uninstalling the Extension, or by clearing the extension's storage from
 
 ## Security note
 
-Account credentials are stored locally in plain text within Chrome's extension storage,
-which is sandboxed to your browser profile. The Extension is intended for use on trusted,
-personal work devices by authorized WeHost staff only.
+Account data is released only to authenticated, allowlisted users: the backend requires a
+valid per-user login before returning any account data. Cached account data is held in
+Chrome's extension storage, which is sandboxed to your browser profile, and is cleared when
+you sign out. The Extension is intended for use on trusted, personal work devices by
+authorized WeHost staff only.
 
 ## Contact
 
