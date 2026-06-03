@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 const STORAGE_KEY = 'wehost_accounts';
 const FAVORITES_KEY = 'wehost_favorites';
 const LAST_SYNCED_KEY = 'wehost_last_synced';
+const ORDER_KEY = 'wehost_order';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 const API_KEY = import.meta.env.VITE_EXTENSION_API_KEY || '';
@@ -38,15 +39,17 @@ function writeStorage(obj) {
 export function useAccounts() {
   const [accounts, setAccounts] = useState([]);
   const [favorites, setFavorites] = useState([]);
+  const [order, setOrder] = useState([]);
   const [lastSynced, setLastSynced] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // On mount: load from cache only — no API call
   useEffect(() => {
-    readStorage([STORAGE_KEY, FAVORITES_KEY, LAST_SYNCED_KEY]).then((result) => {
+    readStorage([STORAGE_KEY, FAVORITES_KEY, LAST_SYNCED_KEY, ORDER_KEY]).then((result) => {
       if (result[STORAGE_KEY]) setAccounts(result[STORAGE_KEY]);
       if (result[FAVORITES_KEY]) setFavorites(result[FAVORITES_KEY]);
+      if (result[ORDER_KEY]) setOrder(result[ORDER_KEY]);
       if (result[LAST_SYNCED_KEY]) setLastSynced(result[LAST_SYNCED_KEY]);
     });
   }, []);
@@ -72,6 +75,11 @@ export function useAccounts() {
     }
   }, []);
 
+  const reorder = useCallback(async (newOrder) => {
+    setOrder(newOrder);
+    await writeStorage({ [ORDER_KEY]: newOrder });
+  }, []);
+
   // Favorites keyed by email
   const toggleFavorite = useCallback(
     async (email) => {
@@ -84,5 +92,5 @@ export function useAccounts() {
     [favorites]
   );
 
-  return { accounts, favorites, lastSynced, loading, error, sync, toggleFavorite };
+  return { accounts, favorites, order, lastSynced, loading, error, sync, toggleFavorite, reorder };
 }

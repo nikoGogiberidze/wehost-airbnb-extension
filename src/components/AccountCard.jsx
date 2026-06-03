@@ -1,6 +1,17 @@
 import React, { useState, memo } from 'react';
 
-const AccountCard = memo(function AccountCard({ account, isFavorited, onToggleFavorite }) {
+const AccountCard = memo(function AccountCard({
+  account,
+  isFavorited,
+  onToggleFavorite,
+  canDrag,
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+}) {
   const [copiedPass, setCopiedPass] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
 
@@ -25,9 +36,30 @@ const AccountCard = memo(function AccountCard({ account, isFavorited, onToggleFa
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#333] last:border-b-0 hover:bg-[#2f2f2f] transition-colors overflow-hidden">
+    <div
+      draggable={canDrag}
+      onDragStart={canDrag ? (e) => { e.dataTransfer.effectAllowed = 'move'; onDragStart(account.email); } : undefined}
+      onDragOver={canDrag ? (e) => { e.preventDefault(); onDragOver(account.email); } : undefined}
+      onDrop={canDrag ? (e) => { e.preventDefault(); onDrop(account.email); } : undefined}
+      onDragEnd={canDrag ? onDragEnd : undefined}
+      className="flex items-center gap-2 px-3 py-2.5 border-b border-[#333] last:border-b-0 transition-colors overflow-hidden"
+      style={{
+        backgroundColor: isDragOver ? '#3a3a3a' : undefined,
+        opacity: isDragging ? 0.4 : 1,
+        borderTop: isDragOver ? '2px solid #e05553' : undefined,
+      }}
+    >
+      {/* Drag handle */}
+      {canDrag && (
+        <span
+          className="shrink-0 text-gray-600 text-base select-none"
+          style={{ cursor: 'grab', lineHeight: 1 }}
+        >
+          ⠿
+        </span>
+      )}
 
-      {/* Favourite star — vertically centred with the whole card */}
+      {/* Favourite star */}
       <button
         onClick={() => onToggleFavorite(account.email)}
         className="inline-flex items-center justify-center shrink-0 w-6 h-6 text-lg hover:scale-110 transition-transform"
@@ -46,7 +78,7 @@ const AccountCard = memo(function AccountCard({ account, isFavorited, onToggleFa
           {account.email}
         </div>
 
-        {/* Action buttons — horizontal, share available width */}
+        {/* Action buttons */}
         <div className="flex gap-1">
           <button
             onClick={handleLogin}
@@ -71,7 +103,6 @@ const AccountCard = memo(function AccountCard({ account, isFavorited, onToggleFa
           >
             {copiedPass ? '✅' : 'Copy Pass'}
           </button>
-
         </div>
       </div>
     </div>

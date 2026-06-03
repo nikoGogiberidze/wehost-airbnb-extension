@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useAccounts } from './hooks/useAccounts';
 import SearchBar from './components/SearchBar';
 import FilterBar from './components/FilterBar';
@@ -6,10 +6,12 @@ import SyncBar from './components/SyncBar';
 import AccountCard from './components/AccountCard';
 
 export default function App() {
-  const { accounts, favorites, lastSynced, loading, error, sync, toggleFavorite } = useAccounts();
+  const { accounts, favorites, order, lastSynced, loading, error, sync, toggleFavorite, reorder } = useAccounts();
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('All');
+  const [dragEmail, setDragEmail] = useState(null);
+  const [dragOverEmail, setDragOverEmail] = useState(null);
 
   // Debounce search by 200ms so filtering doesn't run on every keystroke
   const debounceRef = useRef(null);
@@ -37,18 +39,56 @@ export default function App() {
       return matchesSearch && matchesCity;
     });
 
-    // Sort: favorited (by email) first, then alphabetical by first property's guestyName
     result.sort((a, b) => {
       const aFav = favorites.includes(a.email) ? 0 : 1;
       const bFav = favorites.includes(b.email) ? 0 : 1;
       if (aFav !== bFav) return aFav - bFav;
-      const aName = a.properties?.[0]?.guestyName || a.email;
-      const bName = b.properties?.[0]?.guestyName || b.email;
-      return aName.localeCompare(bName);
+      // Within same group use custom order; new accounts (not in order) go to the end
+      const aIdx = order.indexOf(a.email);
+      const bIdx = order.indexOf(b.email);
+      if (aIdx === -1 && bIdx === -1) return (a.properties?.[0]?.guestyName || a.email).localeCompare(b.properties?.[0]?.guestyName || b.email);
+      if (aIdx === -1) return 1;
+      if (bIdx === -1) return -1;
+      return aIdx - bIdx;
     });
 
     return result;
-  }, [accounts, favorites, search, cityFilter]);
+  }, [accounts, favorites, order, search, cityFilter]);
+
+  const canDrag = search === '';
+
+  const handleDragStart = useCallback((email) => {
+    setDragEmail(email);
+  }, []);
+
+  const handleDragOver = useCallback((email) => {
+    if (!dragEmail || email === dragEmail) return;
+    if (favorites.includes(dragEmail) !== favorites.includes(email)) return;
+    setDragOverEmail(email);
+  }, [dragEmail, favorites]);
+
+  const handleDrop = useCallback((email) => {
+    if (!dragEmail || email === dragEmail) return;
+    if (favorites.includes(dragEmail) !== favorites.includes(email)) return;
+
+    const allEmails = accounts.map((a) => a.email);
+    const base = [...order];
+    allEmails.forEach((e) => { if (!base.includes(e)) base.push(e); });
+
+    const fromIdx = base.indexOf(dragEmail);
+    base.splice(fromIdx, 1);
+    const toIdx = base.indexOf(email);
+    base.splice(toIdx, 0, dragEmail);
+
+    reorder(base);
+    setDragEmail(null);
+    setDragOverEmail(null);
+  }, [dragEmail, favorites, accounts, order, reorder]);
+
+  const handleDragEnd = useCallback(() => {
+    setDragEmail(null);
+    setDragOverEmail(null);
+  }, []);
 
   return (
     <div
@@ -94,6 +134,13 @@ export default function App() {
               account={account}
               isFavorited={favorites.includes(account.email)}
               onToggleFavorite={toggleFavorite}
+              canDrag={canDrag}
+              isDragging={dragEmail === account.email}
+              isDragOver={dragOverEmail === account.email}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
             />
           ))
         )}
