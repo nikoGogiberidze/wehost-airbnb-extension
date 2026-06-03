@@ -16,6 +16,39 @@ or behavior change.
 ### Short description (max 132 chars)
 > View and auto-login to multiple Airbnb host accounts in an isolated incognito session. Built for WeHost property managers.
 
+### Detailed description (store listing body, ~1.8k chars — well under the 16k limit)
+
+> WEHOST – Airbnb Accounts Manager is a productivity tool for WeHost property managers
+> who work across many Airbnb host accounts every day. Instead of hunting for credentials
+> in a spreadsheet, copy-pasting them, and manually clearing sessions between logins, you
+> get your entire roster of accounts in one place and sign in to any of them with a single
+> click.
+>
+> WHAT IT DOES
+> • One-click auto-login — pick an account and the extension opens a fresh incognito window
+>   and signs you into Airbnb automatically.
+> • Clean session isolation — before every login it clears Airbnb cookies and tears down the
+>   previous incognito session, so accounts never bleed into one another and you never end up
+>   logged into the wrong one.
+> • Search & filter — instantly find an account by email or property name, or filter by city.
+> • Favorites & custom order — pin the accounts you use most and drag them into the order you
+>   want; your layout is saved.
+> • Copy email or password to the clipboard in one tap.
+> • On-demand sync — your account list is fetched only when you press Sync. Nothing runs in
+>   the background.
+>
+> WHY INSTALL IT
+> Managing dozens of Airbnb accounts by hand is slow and error-prone — wrong logins, lingering
+> sessions, and constant credential lookups. This extension removes that friction: every
+> account is one click away, and each login starts from a clean, isolated session.
+>
+> PRIVACY
+> Account data is stored locally in your browser and is used only to display your accounts and
+> fill the Airbnb login form. It is never sent anywhere except Airbnb (to sign you in) and your
+> team's secure backend (to fetch the list). No analytics, no tracking, no third-party sharing.
+>
+> This is an internal tool intended for authorized WeHost staff.
+
 ### Single purpose (required field)
 > WEHOST – Airbnb Accounts Manager lets authorized WeHost property managers view their
 > Airbnb host accounts and securely auto-login to any one of them in an isolated incognito
