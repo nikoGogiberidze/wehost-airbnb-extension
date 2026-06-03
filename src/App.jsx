@@ -93,7 +93,7 @@ export default function App() {
   return (
     <div
       className="flex flex-col text-gray-100"
-      style={{ width: 400, height: 580, backgroundColor: '#1a1a1a' }}
+      style={{ width: 480, height: 580, backgroundColor: '#1a1a1a' }}
     >
       {/* Header */}
       <div className="px-3 pt-3 pb-1 border-b border-[#333]">
