@@ -79,6 +79,12 @@ The dashboard requires a justification for each permission. Paste these:
 - **Host permission `https://www.airbnb.com/*`** — Required to run the auto-login content
   script on the Airbnb login page. The extension does not access any other website.
 
+- **Remote code — answer: NO.** The extension executes only code bundled in the package.
+  It loads Google Fonts (stylesheet + font files) and fetches account data from the Vercel
+  proxy, but fonts/CSS/JSON data are resources, not executable remote code. Select
+  "No, I am not using remote code." (If the reviewer flags the Google Fonts CDN link anyway,
+  self-host the fonts to remove the external request — see note in chat.)
+
 ---
 
 ## Data use disclosures (Privacy practices tab)
