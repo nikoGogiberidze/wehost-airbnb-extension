@@ -2,14 +2,18 @@
 // Files/dirs under api/ prefixed with "_" are not routed as functions by Vercel,
 // but can be imported by the route handlers (api/login.js, api/accounts.js).
 
-import { createHmac, createHash, timingSafeEqual } from 'crypto';
+import { createHmac, scryptSync, timingSafeEqual } from 'crypto';
 
 // --- Password hashing -------------------------------------------------------
 
-// sha256(password + pepper). The pepper is a server-only secret (AUTH_PEPPER),
-// so a leaked AUTH_USERS list alone cannot be brute-forced offline without it.
+// scrypt is a deliberately slow, memory-hard KDF — far more resistant to GPU
+// brute-force than a plain hash. The server-only pepper (AUTH_PEPPER) doubles as
+// the salt, so hashing stays deterministic (login re-hashes the candidate and
+// compares) without storing a per-user salt. A leaked AUTH_USERS list cannot be
+// cracked offline without the pepper. (A future hardening step is a per-user
+// random salt stored alongside each hash.)
 export function hashPassword(password, pepper) {
-  return createHash('sha256').update(String(password) + String(pepper || '')).digest('hex');
+  return scryptSync(String(password), String(pepper || ''), 64).toString('hex');
 }
 
 function safeEqualHex(a, b) {
@@ -121,5 +125,15 @@ export function rateLimit(ip, limit = 60) {
 }
 
 export function clientIp(req) {
-  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  // x-real-ip is set by Vercel's edge to the real connecting IP and cannot be
+  // spoofed by the client. Fall back to the LAST x-forwarded-for entry (the hop
+  // closest to Vercel), never the client-controlled first entry.
+  const real = req.headers['x-real-ip'];
+  if (real) return String(real).trim();
+  const xff = req.headers['x-forwarded-for'];
+  if (xff) {
+    const parts = String(xff).split(',').map((s) => s.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1];
+  }
+  return 'unknown';
 }

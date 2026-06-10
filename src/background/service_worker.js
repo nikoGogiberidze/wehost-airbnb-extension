@@ -221,7 +221,12 @@ function injectLoginOnReady(tabId, email, password) {
   function onTabUpdated(id, changeInfo, tab) {
     if (id !== tabId) return;
     if (changeInfo.status !== 'complete') return;
-    if (!tab.url || !tab.url.includes('airbnb.com')) return;
+    // Strict hostname check — never inject credentials into a page whose URL merely
+    // contains the substring "airbnb.com" (e.g. airbnb.com.evil.com or evil.com/?airbnb.com).
+    if (!tab.url) return;
+    let host;
+    try { host = new URL(tab.url).hostname; } catch { return; }
+    if (host !== 'airbnb.com' && !host.endsWith('.airbnb.com')) return;
 
     chrome.tabs.onUpdated.removeListener(onTabUpdated);
 
